@@ -498,7 +498,10 @@ Ajax.InPlaceEditor = Class.create({
     this._boundCancelHandler = this.handleFormCancellation.bind(this);
     this._boundComplete = (this.options.onComplete || Prototype.emptyFunction).bind(this);
     this._boundFailureHandler = this.handleAJAXFailure.bind(this);
-    this._boundSubmitHandler = this.handleFormSubmission.bind(this);
+    if (!this.options.disableAjaxSubmission)
+      this._boundSubmitHandler = this.handleFormSubmission.bind(this);
+    else
+      this._boundSubmitHandler = this.handleFormWithoutSubmission.bind(this);
     this._boundWrapperHandler = this.wrapUp.bind(this);
     this.registerListeners();
   },
@@ -506,8 +509,12 @@ Ajax.InPlaceEditor = Class.create({
     if (!this._editing || e.ctrlKey || e.altKey || e.shiftKey) return;
     if (Event.KEY_ESC == e.keyCode)
       this.handleFormCancellation(e);
-    else if (Event.KEY_RETURN == e.keyCode)
-      this.handleFormSubmission(e);
+    else if (Event.KEY_RETURN == e.keyCode) {
+      if (this.options.disableAjaxSubmission)
+        this.handleFormWithoutSubmission(e);
+      else
+        this.handleFormSubmission(e);
+    }
   },
   createControl: function(mode, handler, extraClasses) {
     var control = this.options[mode + 'Control'];
@@ -615,6 +622,12 @@ Ajax.InPlaceEditor = Class.create({
   },
   handleFormCancellation: function(e) {
     this.wrapUp();
+    if (e) Event.stop(e);
+  },
+  handleFormWithoutSubmission: function(e) {
+    this.element.innerHTML = this._controls.editor.value;
+    this.leaveEditMode();
+
     if (e) Event.stop(e);
   },
   handleFormSubmission: function(e) {
